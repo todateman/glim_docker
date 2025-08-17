@@ -1,0 +1,36 @@
+{
+  /*** Keyframe-based VGICP odometry estimation ***
+  // smoother_lag                : Fixed-lag smoothing window size [sec]
+  // use_isam2_dogleg            : Use the dogleg optimizer as the backend of ISAM2 that is slow but more robust
+  // isam2_relinearize_skip      :
+  // isam2_relinearize_thresh    :
+  */
+  "odometry_estimation": {
+    "so_name": "libodometry_estimation_cpu.so",
+    // Initialization params
+    "initialization_mode": "LOOSE",
+    "initialization_window_size": 5.0,
+    "init_pose_damping_scale": 1e25,
+    // Optimizer params
+    "smoother_lag": 3.0,
+    "use_isam2_dogleg": true,
+    "isam2_relinearize_skip": 3,
+    "isam2_relinearize_thresh": 0.005,
+    "fix_imu_bias": false,
+    // Registration settings
+    "registration_type": "GICP",
+    "max_iterations": 10,
+    "lru_thresh": 120,
+    "target_downsampling_rate": 0.12,
+    // GICP + iVox params
+    "ivox_resolution": 1.5,
+    "ivox_min_dist": 0.15,
+    // VGICP params
+    "vgicp_resolution": 0.4,
+    "vgicp_voxelmap_levels": 1,
+    "vgicp_voxelmap_scaling_factor": 2.0,
+    // Optimizer params
+    "save_imu_rate_trajectory": true,
+    "num_threads": 4
+  }
+}

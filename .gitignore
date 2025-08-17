@@ -1,0 +1,53 @@
+# git
+!.gitignore
+
+# SLAM Output Data
+output/
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# Log files
+*.log
+*.out
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker volumes and cache
+.docker/
+
+# Backup files
+*.bak
+*.backup
+
+# Sample data (large files)
+*.bag
+*.mcap
+*.pcd
+*.ply
+*.db3
+metadata.yaml
+
+# Configuration backup files
+config**/backup/
+config**/*.backup
+
+# Runtime generated files
+dump/
+maps/
+trajectories/
