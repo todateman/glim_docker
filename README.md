@@ -40,7 +40,7 @@
 ```bash
 # 設定ファイルをコピーして編集
 git clone https://github.com/koide3/glim.git /tmp/glim
-cp -R /tmp/glim/config $HOME/glim/config
+cp -R /tmp/glim/config $HOME/glim_docker/config
 
 # Docker Hubからイメージを取得
 docker pull koide3/glim_ros2:humble_cuda12.2
@@ -65,7 +65,7 @@ docker run \
 ```bash
 # 設定ファイルをコピーして編集
 git clone https://github.com/koide3/glim.git /tmp/glim
-cp -R /tmp/glim/config $HOME/glim/config
+cp -R /tmp/glim/config $HOME/glim_docker/config
 
 # 以下のように変更:
 # "config_odometry" : "config_odometry_cpu.json"
