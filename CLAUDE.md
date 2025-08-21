@@ -4,7 +4,10 @@ This project runs [GLIM](https://koide3.github.io/glim/) ([github: koide3/glim_r
 
 ## Environment
 
-- LiDAR: [Unitree D4 LiDAR L2](https://www.unitree.com/L2)
+### Supported LiDAR Sensors
+
+#### Unitree D4 LiDAR L2
+- [Unitree D4 LiDAR L2](https://www.unitree.com/L2)
   - SKD: https://github.com/unitreerobotics/unilidar_sdk2
   - ROS2 TOPIC
     - LiDAR: /unilidar/cloud
@@ -15,8 +18,20 @@ This project runs [GLIM](https://koide3.github.io/glim/) ([github: koide3/glim_r
   - Effective frequency: 64000points/s
   - Circumferential scanning frequency: 5.55Hz
   - IMU: 3-axis acceleration +3-axis gyroscope
-- PC: 
-  - GPU: NVIDIA Geforce RTX 5060Ti
+
+#### Livox Mid-360
+- [Livox Mid-360](https://www.livoxtech.com/mid-360)
+  - ROS2 TOPIC
+    - LiDAR: /livox/lidar
+    - IMU: /livox/imu
+  - "T_lidar_imu": [-0.011, -0.02329, 0.04412, 0.0, 0.0, 0.0, 1.0]
+  - Detection range: 70m @ 80% reflectivity
+  - FOV: 360° × 59°
+  - Scan rate: 10Hz
+  - IMU: 6-axis (3-axis accelerometer + 3-axis gyroscope)
+
+### PC Environment
+- GPU: NVIDIA Geforce RTX 5060Ti
 
 ## Environment construction (Reference source: https://koide3.github.io/glim/docker.html)
 
@@ -109,17 +124,21 @@ docker build \
 ```
 $HOME
 └── glim_docker/
-        ├── config_L2_default/                     // Default Settings (Original GLIM)
-        ├── config_L2_indoor_gpu/                  // Indoor GPU Settings (High-speed & High-precision)
-        ├── config_L2_indoor_cpu/                  // Indoor CPU Settings (High-precision)
-        ├── config_L2_outdoor_gpu/                 // Outdoor GPU Settings (High-speed & High-precision)
-        ├── config_L2_outdoor_cpu/                 // Outdoor CPU Settings (High-precision)
-        ├── glim_offline_viewer_docker.sh          // Offline Viewer
-        ├── glim_rosbag_docker_L2_indoor.sh           // Indoor GPU mapping from rosbag
-        ├── glim_rosbag_docker_L2_indoor_cpu.sh       // Indoor CPU mapping from rosbag
-        ├── glim_rosbag_docker_L2_outdoor.sh          // Outdoor GPU mapping from rosbag
-        ├── glim_rosbag_docker_L2_outdoor_cpu.sh      // Outdoor CPU mapping from rosbag
-        ├── glim_rosnode_docker_L2.sh                 // Real-time ROS node (subscribes to topics)
+        ├── config/                                // Default Settings (Original GLIM)
+        ├── config_L2_default/                     // Unitree L2 Default Settings
+        ├── config_L2_indoor_gpu/                  // Unitree L2 Indoor GPU Settings (High-speed & High-precision)
+        ├── config_L2_indoor_cpu/                  // Unitree L2 Indoor CPU Settings (High-precision)
+        ├── config_L2_outdoor_gpu/                 // Unitree L2 Outdoor GPU Settings (High-speed & High-precision)
+        ├── config_L2_outdoor_cpu/                 // Unitree L2 Outdoor CPU Settings (High-precision)
+        ├── config_mid360/                         // Livox Mid-360 Settings
+        ├── glim_offline_viewer_docker_cpu.sh      // Offline Viewer (CPU)
+        ├── glim_offline_viewer_docker_gpu.sh      // Offline Viewer (GPU)
+        ├── glim_rosbag_docker_L2_indoor_gpu.sh    // Unitree L2 Indoor GPU mapping from rosbag
+        ├── glim_rosbag_docker_L2_indoor_cpu.sh    // Unitree L2 Indoor CPU mapping from rosbag
+        ├── glim_rosbag_docker_L2_outdoor_gpu.sh   // Unitree L2 Outdoor GPU mapping from rosbag
+        ├── glim_rosbag_docker_L2_outdoor_cpu.sh   // Unitree L2 Outdoor CPU mapping from rosbag
+        ├── glim_rosbag_docker_mid360_gpu.sh       // Livox Mid-360 GPU mapping from rosbag
+        ├── glim_rosnode_docker_L2.sh              // Real-time ROS node (subscribes to topics)
         └── output/                                // SLAM Output Data
 ```
 
@@ -148,7 +167,7 @@ $HOME
 
 ```bash
 # GPU Version (Recommended for real-time)
-./glim_rosbag_docker_L2_indoor.sh $HOME/localization/unitree_L2/L2_Indoor_Point_Cloud_Data_sample_ROS2
+./glim_rosbag_docker_L2_indoor_gpu.sh $HOME/localization/unitree_L2/L2_Indoor_Point_Cloud_Data_sample_ROS2
 
 # CPU Version (Maximum precision)
 ./glim_rosbag_docker_L2_indoor_cpu.sh $HOME/localization/unitree_L2/L2_Indoor_Point_Cloud_Data_sample_ROS2
@@ -158,10 +177,21 @@ $HOME
 
 ```bash
 # GPU Version (Recommended for real-time)
-./glim_rosbag_docker_L2_outdoor.sh $HOME/localization/unitree_L2/L2_Park_Point_Cloud_Data_sample_ROS2
+./glim_rosbag_docker_L2_outdoor_gpu.sh $HOME/localization/unitree_L2/L2_Park_Point_Cloud_Data_sample_ROS2
 
 # CPU Version (Maximum precision)
 ./glim_rosbag_docker_L2_outdoor_cpu.sh $HOME/localization/unitree_L2/L2_Park_Point_Cloud_Data_sample_ROS2
+```
+
+### Livox Mid-360 Mapping
+
+```bash
+# GPU Version (Recommended for real-time)
+./glim_rosbag_docker_mid360_gpu.sh /path/to/your/mid360_rosbag
+
+# Configuration optimized for Livox Mid-360 sensor characteristics
+# Topics: /livox/lidar, /livox/imu
+# T_lidar_imu: [-0.011, -0.02329, 0.04412, 0.0, 0.0, 0.0, 1.0]
 ```
 
 ## Configuration Tips

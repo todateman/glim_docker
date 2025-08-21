@@ -4,7 +4,10 @@
 
 ## 環境
 
-- **LiDAR**: [Unitree D4 LiDAR L2](https://www.unitree.com/L2)
+### 対応LiDARセンサー
+
+#### Unitree D4 LiDAR L2
+- [Unitree D4 LiDAR L2](https://www.unitree.com/L2)
   - SDK: https://github.com/unitreerobotics/unilidar_sdk2
   - ROS2 トピック
     - LiDAR: `/unilidar/cloud`
@@ -16,8 +19,19 @@
   - 周回スキャン周波数: 5.55Hz
   - IMU: 3軸加速度計 + 3軸ジャイロスコープ
 
-- **PC環境**: 
-  - GPU: NVIDIA GeForce RTX 5060Ti
+#### Livox Mid-360
+- [Livox Mid-360](https://www.livoxtech.com/mid-360)
+  - ROS2 トピック
+    - LiDAR: `/livox/lidar`
+    - IMU: `/livox/imu`
+  - LiDAR-IMU変換: `[-0.011, -0.02329, 0.04412, 0.0, 0.0, 0.0, 1.0]`
+  - 検出範囲: 70m @ 80% 反射率
+  - 視野角: 360° × 59°
+  - スキャンレート: 10Hz
+  - IMU: 6軸（3軸加速度計 + 3軸ジャイロスコープ）
+
+### PC環境
+- GPU: NVIDIA GeForce RTX 5060Ti
 
 ## 環境構築（参考：https://koide3.github.io/glim/docker.html）
 
@@ -109,18 +123,22 @@ docker build \
 
 ```
 $HOME
-└── glim/
-        ├── config_L2_default/                     // デフォルト設定（オリジナルGLIM）
-        ├── config_L2_indoor_gpu/                  // 屋内GPU設定（高速・高精度）
-        ├── config_L2_indoor_cpu/                  // 屋内CPU設定（高精度）
-        ├── config_L2_outdoor_gpu/                 // 屋外GPU設定（高速・高精度）
-        ├── config_L2_outdoor_cpu/                 // 屋外CPU設定（高精度）
-        ├── glim_offline_viewer_docker.sh          // オフラインビューア
-        ├── glim_rosbag_docker_L2_indoor.sh           // 屋内GPU rosbagマッピング
-        ├── glim_rosbag_docker_L2_indoor_cpu.sh       // 屋内CPU rosbagマッピング
-        ├── glim_rosbag_docker_L2_outdoor.sh          // 屋外GPU rosbagマッピング
-        ├── glim_rosbag_docker_L2_outdoor_cpu.sh      // 屋外CPU rosbagマッピング
-        ├── glim_rosnode_docker_L2.sh                 // リアルタイムROSノード（トピック購読）
+└── glim_docker/
+        ├── config/                                // デフォルト設定（オリジナルGLIM）
+        ├── config_L2_default/                     // Unitree L2 デフォルト設定
+        ├── config_L2_indoor_gpu/                  // Unitree L2 屋内GPU設定（高速・高精度）
+        ├── config_L2_indoor_cpu/                  // Unitree L2 屋内CPU設定（高精度）
+        ├── config_L2_outdoor_gpu/                 // Unitree L2 屋外GPU設定（高速・高精度）
+        ├── config_L2_outdoor_cpu/                 // Unitree L2 屋外CPU設定（高精度）
+        ├── config_mid360/                         // Livox Mid-360 設定
+        ├── glim_offline_viewer_docker_cpu.sh      // オフラインビューア（CPU）
+        ├── glim_offline_viewer_docker_gpu.sh      // オフラインビューア（GPU）
+        ├── glim_rosbag_docker_L2_indoor_gpu.sh    // Unitree L2 屋内GPU rosbagマッピング
+        ├── glim_rosbag_docker_L2_indoor_cpu.sh    // Unitree L2 屋内CPU rosbagマッピング
+        ├── glim_rosbag_docker_L2_outdoor_gpu.sh   // Unitree L2 屋外GPU rosbagマッピング
+        ├── glim_rosbag_docker_L2_outdoor_cpu.sh   // Unitree L2 屋外CPU rosbagマッピング
+        ├── glim_rosbag_docker_mid360_gpu.sh       // Livox Mid-360 GPU rosbagマッピング
+        ├── glim_rosnode_docker_L2.sh              // リアルタイムROSノード（トピック購読）
         └── output/                                // SLAM出力データ
 ```
 
@@ -149,7 +167,7 @@ $HOME
 
 ```bash
 # GPU版（リアルタイム推奨）
-./glim_rosbag_docker_L2_indoor.sh $HOME/localization/unitree_L2/L2_Indoor_Point_Cloud_Data_sample_ROS2
+./glim_rosbag_docker_L2_indoor_gpu.sh $HOME/localization/unitree_L2/L2_Indoor_Point_Cloud_Data_sample_ROS2
 
 # CPU版（最高精度）
 ./glim_rosbag_docker_L2_indoor_cpu.sh $HOME/localization/unitree_L2/L2_Indoor_Point_Cloud_Data_sample_ROS2
@@ -159,10 +177,21 @@ $HOME
 
 ```bash
 # GPU版（リアルタイム推奨）
-./glim_rosbag_docker_L2_outdoor.sh $HOME/localization/unitree_L2/L2_Park_Point_Cloud_Data_sample_ROS2
+./glim_rosbag_docker_L2_outdoor_gpu.sh $HOME/localization/unitree_L2/L2_Park_Point_Cloud_Data_sample_ROS2
 
 # CPU版（最高精度）
 ./glim_rosbag_docker_L2_outdoor_cpu.sh $HOME/localization/unitree_L2/L2_Park_Point_Cloud_Data_sample_ROS2
+```
+
+### Livox Mid-360 マッピング
+
+```bash
+# GPU版（リアルタイム推奨）
+./glim_rosbag_docker_mid360_gpu.sh /path/to/your/mid360_rosbag
+
+# Livox Mid-360 センサー特性に最適化された設定
+# トピック: /livox/lidar, /livox/imu
+# T_lidar_imu: [-0.011, -0.02329, 0.04412, 0.0, 0.0, 0.0, 1.0]
 ```
 
 ## 設定のコツ
