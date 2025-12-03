@@ -35,7 +35,7 @@
 
 ## 環境構築（参考：https://koide3.github.io/glim/docker.html）
 
-### GPUありの場合
+### GPUで処理の場合
 
 ```bash
 # 設定ファイルをコピーして編集
@@ -44,8 +44,14 @@ cp -R /tmp/glim/config $HOME/glim_docker/config
 
 # Docker Hubからイメージを取得
 docker pull koide3/glim_ros2:humble_cuda12.2
+```
 
+以下は単体でSLAMを実行する場合のコマンド。  
+[後述のシェルスクリプト](#使用方法)を使用する方法が簡単なのでおすすめ。
+
+```bash
 # GPU およびDISPLAY サポート付きでglim_ros2:humble_cuda12.2 イメージを起動
+# 別ターミナルでrosbagファイルを再生すること
 docker run \
   -it \
   --rm \
@@ -55,12 +61,13 @@ docker run \
   --gpus all \
   -e=DISPLAY \
   -e=ROS_DOMAIN_ID \
-  -v $(realpath config):/glim/config \
+  -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+  -v $HOME/glim_docker/config:/glim/config \
   koide3/glim_ros2:humble_cuda12.2 \
   ros2 run glim_ros glim_rosnode --ros-args -p config_path:=/glim/config
 ```
 
-### GPUなしの場合
+### CPUで処理（GPUなし）の場合
 
 ```bash
 # 設定ファイルをコピーして編集
@@ -75,8 +82,14 @@ nano config/config.json
 
 # Docker Hubからイメージを取得
 docker pull koide3/glim_ros2:humble
+```
 
+以下は単体でSLAMを実行する場合のコマンド。  
+[後述のシェルスクリプト](#使用方法)を使用する方法が簡単なのでおすすめ。
+
+```bash
 # DISPLAYサポート付きでglim_ros2:humble イメージを起動
+# 別ターミナルでrosbagファイルを再生すること
 docker run \
   -it \
   --rm \
@@ -85,19 +98,22 @@ docker run \
   --pid=host \
   -e=DISPLAY \
   -e=ROS_DOMAIN_ID \
-  -v $(realpath config):/glim/config \
+  -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+  -v $HOME/glim_docker/config:/glim/config \
   koide3/glim_ros2:humble \
   ros2 run glim_ros glim_rosnode --ros-args -p config_path:=/glim/config
 ```
 
-### ソースからDockerイメージをビルド
+### （参考）ソースからDockerイメージをビルド
+
+必須ではないが、Docker Hubからイメージを取得しない場合は下記のコマンドでDockerイメージをビルドする。
 
 ```bash
 mkdir /tmp/glim_docker && cd /tmp/glim_docker
 git clone https://github.com/koide3/glim.git 
 git clone https://github.com/koide3/glim_ros2.git
 
-# GPUなし
+# GPU
 docker build \
   -f glim_ros2/docker/Dockerfile.gcc \
   --build-arg="BASE_IMAGE=koide3/gtsam_points:jammy" \
@@ -105,7 +121,7 @@ docker build \
   --tag glim_ros2:humble \
   .
 
-# GPUあり
+# CPU
 docker build \
   -f glim_ros2/docker/Dockerfile.gcc.cuda \
   --build-arg="BASE_IMAGE=koide3/gtsam_points:jammy_cuda12.2" \
@@ -114,11 +130,6 @@ docker build \
   .
 ```
 
-## [L2 サンプルデータ](https://www.unitree.com/download/L2)
-
-- [L2 屋内点群データ](https://oss-global-cdn.unitree.com/static/L2%20Indoor%20Point%20Cloud%20Data.bag): `$HOME/localization/unitree_L2/L2_Indoor_Point_Cloud_Data_sample_ROS2`
-- [L2 公園点群データ](https://oss-global-cdn.unitree.com/static/L2%20Park%20Point%20Cloud%20Data.bag): `$HOME/localization/unitree_L2/L2_Park_Point_Cloud_Data_sample_ROS2`
-
 ## ディレクトリ構造
 
 ```
@@ -126,10 +137,10 @@ $HOME
 └── glim_docker/
         ├── config/                                // デフォルト設定（オリジナルGLIM）
         ├── config_L2_default/                     // Unitree L2 デフォルト設定
-        ├── config_L2_indoor_gpu/                  // Unitree L2 屋内GPU設定（高速・高精度）
-        ├── config_L2_indoor_cpu/                  // Unitree L2 屋内CPU設定（高精度）
-        ├── config_L2_outdoor_gpu/                 // Unitree L2 屋外GPU設定（高速・高精度）
-        ├── config_L2_outdoor_cpu/                 // Unitree L2 屋外CPU設定（高精度）
+        ├── config_L2_indoor_gpu/                  // Unitree L2 屋内GPU設定
+        ├── config_L2_indoor_cpu/                  // Unitree L2 屋内CPU設定
+        ├── config_L2_outdoor_gpu/                 // Unitree L2 屋外GPU設定
+        ├── config_L2_outdoor_cpu/                 // Unitree L2 屋外CPU設定
         ├── config_mid360/                         // Livox Mid-360 設定
         ├── glim_offline_viewer_docker_cpu.sh      // オフラインビューア（CPU）
         ├── glim_offline_viewer_docker_gpu.sh      // オフラインビューア（GPU）
@@ -146,47 +157,59 @@ $HOME
 
 ### GPU vs CPU 設定
 
-| タイプ | 環境 | Dockerイメージ | 処理速度 | 精度 | 用途 |
-|--------|------|----------------|----------|------|------|
-| **GPU** | 屋内/屋外 | `koide3/glim_ros2:humble_cuda12.2` | 高速（1.5-3倍） | 高 | リアルタイム処理、高速マッピング |
-| **CPU** | 屋内/屋外 | `koide3/glim_ros2:humble` | 中速（5-8倍） | 最高 | オフライン処理、最高精度 |
+| タイプ | Dockerイメージ | 処理速度 |
+|--------|----------------|----------|
+| **GPU** | `koide3/glim_ros2:humble_cuda12.2` | 高速（1.5-3倍） |
+| **CPU** | `koide3/glim_ros2:humble` | 中速（5-8倍） |
 
 ### 環境別最適化
 
 | パラメータ | 屋内 | 屋外 | 説明 |
 |------------|------|------|------|
 | **ボクセル解像度** | 0.1-0.15m | 0.3-0.4m | 屋内は細かい詳細が必要 |
-| **キーフレーム距離** | 0.3m | 1.5m | 屋内：頻繁更新、屋外：疎更新 |
-| **ループ検出** | 25-30m | 60-100m | 屋内：狭い空間、屋外：広いエリア |
+| **キーフレーム距離** | 0.3m | 1.5m | 屋内：頻繁更新<BR>屋外：疎更新 |
+| **ループ検出** | 25-30m | 60-100m | 屋内：狭い空間<BR>屋外：広いエリア |
 | **点群密度** | 35K-50K | 20K-30K | 屋内：詳細が必要 |
-| **IMUノイズ** | 低 | 高 | 屋内：安定動作、屋外：可変条件 |
+| **IMUノイズ** | 低 | 高 | 屋内：安定動作<BR>屋外：可変条件 |
 
 ## 使用方法
 
+### [L2 サンプルデータ](https://www.unitree.com/download/L2)の保存場所
+
+- [L2 屋内点群データ](https://oss-global-cdn.unitree.com/static/L2%20Indoor%20Point%20Cloud%20Data.bag): `$HOME/localization/unitree_L2/L2_Indoor_Point_Cloud_Data_sample_ROS2`
+- [L2 公園点群データ](https://oss-global-cdn.unitree.com/static/L2%20Park%20Point%20Cloud%20Data.bag): `$HOME/localization/unitree_L2/L2_Park_Point_Cloud_Data_sample_ROS2`
+
+
 ### 屋内マッピング
 
+シェルスクリプトで自動処理
+
 ```bash
-# GPU版（リアルタイム推奨）
+# GPU
 ./glim_rosbag_docker_L2_indoor_gpu.sh $HOME/localization/unitree_L2/L2_Indoor_Point_Cloud_Data_sample_ROS2
 
-# CPU版（最高精度）
+# CPU
 ./glim_rosbag_docker_L2_indoor_cpu.sh $HOME/localization/unitree_L2/L2_Indoor_Point_Cloud_Data_sample_ROS2
 ```
 
 ### 屋外マッピング
 
+シェルスクリプトで自動処理
+
 ```bash
-# GPU版（リアルタイム推奨）
+# GPU
 ./glim_rosbag_docker_L2_outdoor_gpu.sh $HOME/localization/unitree_L2/L2_Park_Point_Cloud_Data_sample_ROS2
 
-# CPU版（最高精度）
+# CPU
 ./glim_rosbag_docker_L2_outdoor_cpu.sh $HOME/localization/unitree_L2/L2_Park_Point_Cloud_Data_sample_ROS2
 ```
 
 ### Livox Mid-360 マッピング
 
+シェルスクリプトで自動処理
+
 ```bash
-# GPU版（リアルタイム推奨）
+# GPU
 ./glim_rosbag_docker_mid360_gpu.sh /path/to/your/mid360_rosbag
 
 # Livox Mid-360 センサー特性に最適化された設定
@@ -194,17 +217,99 @@ $HOME
 # T_lidar_imu: [-0.011, -0.02329, 0.04412, 0.0, 0.0, 0.0, 1.0]
 ```
 
+### GLIMをオフラインビューアーモードで立ち上げ（構成データをGUIで確認・`.ply`で保存）
+
+構成データをGUIで3D点群データとして確認し、`.PLY`形式で保存する。
+
+```bash
+# GPU
+docker run \
+  -it \
+  --rm \
+  --net=host \
+  --ipc=host \
+  --gpus all \
+  -e=DISPLAY \
+  -e=NVIDIA_VISIBLE_DEVICES=all \
+  -e=NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics \
+  -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+  -v $HOME/glim_docker/config:/glim/config \
+  -v $HOME/glim_docker/output:/tmp/dump \
+  koide3/glim_ros2:humble_cuda12.2 \
+  ros2 run glim_ros offline_viewer
+
+# CPU
+docker run \
+  -it \
+  --rm \
+  --net=host \
+  --ipc=host \
+  -e=DISPLAY \
+  -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+  -v "$HOME/glim_docker/config":/glim/config \
+  -v "$HOME/glim_docker/output":/tmp/dump \
+  koide3/glim_ros2:humble \
+  ros2 run glim_ros offline_viewer
+```
+
+GLIMのGUIが立ち上がったら、左上のタブから`File->read`を選択し、`/tmp/dump/`の構成データを指定する。
+
+> [!WARNING]
+> GLIMはDocker環境で立ち上げているので、ローカル環境の`$HOME/glim_docker/output`ではなくDocker環境内の`/tmp/dump/`でないと構成データが見つからないことに注意
+
+点群が3DのMAPになっていれば、`File -> Save -> Save Map`と選択して`.ply`形式で`/tmp/dump/`に保存すれば、ローカル環境の`$HOME/glim_docker/output`に点群MAPファイル保存される。
+
+### GLIMをマップエディタモードで立ち上げ（ノイズの削除など）
+
+[GLIM Manual Object Removal](https://koide3.github.io/glim/edit.html) を参考に、構成ファイルから手動でノイズ除去などの処理を実行できる。
+
+```bash
+# GPU
+docker run \
+  -it \
+  --rm \
+  --net=host \
+  --ipc=host \
+  --gpus all \
+  -e=DISPLAY \
+  -e=NVIDIA_VISIBLE_DEVICES=all \
+  -e=NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics \
+  -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+  -v $HOME/glim_docker/config:/glim/config \
+  -v $HOME/glim_docker/output:/tmp/dump \
+  koide3/glim_ros2:humble_cuda12.2 \
+  ros2 run glim_ros map_editor
+
+# CPU
+docker run \
+  -it \
+  --rm \
+  --net=host \
+  --ipc=host \
+  -e=DISPLAY \
+  -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+  -v "$HOME/glim_docker/config":/glim/config \
+  -v "$HOME/glim_docker/output":/tmp/dump \
+  koide3/glim_ros2:humble \
+  ros2 run glim_ros map_editor
+```
+
+GLIMのGUIが立ち上がったら、左上のタブから`File->read`を選択し、`/tmp/dump/`の構成データを指定する。
+
+> [!WARNING]
+> GLIMはDocker環境で立ち上げているので、ローカル環境の`$HOME/glim_docker/output`ではなくDocker環境内の`/tmp/dump/`でないと構成データが見つからないことに注意
+
+
 ## 設定のコツ
 
-### より高い精度を得るために
+### より高い精度が必要な場合
 
-- **CPU版を使用**: 最高精度が必要なオフライン処理に
 - **点群密度を増加**: `random_downsample_target` の値を高く
 - **外れ値除去を有効化**: 前処理で `enable_outlier_removal: true` に設定
 - **ボクセル解像度を減少**: より細かい詳細を捉えるため値を小さく
 - **スムージングウィンドウを長く**: 軌道安定のため `smoother_lag` を増加
 
-### より高い速度を得るために
+### より早い速度で処理する場合
 
 - **GPU版を使用**: CUDA アクセラレーション付き
 - **点群密度を減少**: `random_downsample_target` の値を低く
